@@ -1,71 +1,1418 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Test Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background: #35424a;
-            color: #ffffff;
-            padding: 20px 0;
-            text-align: center;
-        }
-        .container {
-            width: 80%;
-            margin: auto;
-            overflow: hidden;
-        }
-        .results {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-        }
-        .result {
-            border: 1px solid #35424a;
-            border-radius: 5px;
-            background: #ffffff;
-            margin: 15px;
-            padding: 20px;
-            flex: 1;
-            min-width: 300px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speed Test Dashboard Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{
+  --bg:#08090f;--surface:#0f1117;--surface2:#161b27;--surface3:#1c2235;
+  --border:#222d45;--border2:#2d3d5a;--text:#dde4f0;--muted:#4f607a;--muted2:#6b7fa0;
+  --accent:#60a5fa;--accent2:#3b82f6;--wifi:#818cf8;--cell:#22d3ee;
+  --success:#4ade80;--warning:#fbbf24;--danger:#f87171;--pink:#f472b6;--teal:#2dd4bf;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ═══════════════ SETUP SCREEN ═══════════════ */
+#setup-screen{
+min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:40px 24px;
+background:radial-gradient(ellipse at 20% 50%,rgba(96,165,250,0.06) 0%,transparent 60%),
+radial-gradient(ellipse at 80% 20%,rgba(129,140,248,0.05) 0%,transparent 60%),
+var(–bg);
+}
+.setup-header{text-align:center;margin-bottom:40px;}
+.setup-logo{
+display:inline-flex;align-items:center;gap:10px;
+font-family:‘Space Mono’,monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;
+color:var(–muted);margin-bottom:16px;
+}
+.setup-logo-dot{width:8px;height:8px;border-radius:50%;background:var(–accent);box-shadow:0 0 12px var(–accent);}
+.setup-title{
+font-family:‘Space Mono’,monospace;font-size:clamp(28px,5vw,44px);
+color:var(–text);letter-spacing:-2px;line-height:1.1;margin-bottom:12px;
+}
+.setup-title span{color:var(–accent);}
+.setup-subtitle{font-size:14px;color:var(–muted2);line-height:1.6;max-width:480px;margin:0 auto;}
+
+/* Card */
+.setup-card{
+background:var(–surface);border:1px solid var(–border);border-radius:20px;
+padding:36px;max-width:700px;width:100%;
+box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.02);
+}
+.setup-steps{display:flex;flex-direction:column;gap:28px;}
+.step-block{display:flex;gap:16px;}
+.step-num-col{display:flex;flex-direction:column;align-items:center;gap:0;}
+.step-circle{
+width:28px;height:28px;border-radius:50%;background:var(–surface2);border:1px solid var(–border);
+font-family:‘Space Mono’,monospace;font-size:11px;color:var(–muted);
+display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;
+}
+.step-circle.active{background:var(–accent);border-color:var(–accent);color:#000;font-weight:700;box-shadow:0 0 14px rgba(96,165,250,.4);}
+.step-circle.done{background:var(–success);border-color:var(–success);color:#000;}
+.step-line{width:1px;flex:1;background:var(–border);margin:4px 0;}
+.step-body{flex:1;padding-top:3px;}
+.step-label{font-family:‘Space Mono’,monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(–muted);margin-bottom:12px;}
+
+/* Drop zone */
+.drop-zone{
+border:2px dashed var(–border2);border-radius:12px;padding:36px 24px;
+text-align:center;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
+}
+.drop-zone::before{
+content:’’;position:absolute;inset:0;background:linear-gradient(135deg,rgba(96,165,250,0.03),transparent);
+opacity:0;transition:opacity .25s;
+}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(–accent);background:rgba(96,165,250,.04);}
+.drop-zone:hover::before,.drop-zone.dragover::before{opacity:1;}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:36px;margin-bottom:12px;display:block;}
+.drop-title{font-size:15px;font-weight:600;color:var(–text);margin-bottom:4px;}
+.drop-hint{font-size:12px;color:var(–muted);line-height:1.6;}
+.drop-success{
+display:none;margin-top:12px;padding:10px 14px;background:rgba(74,222,128,.08);
+border:1px solid rgba(74,222,128,.2);border-radius:8px;
+font-size:12px;color:var(–success);font-family:‘Space Mono’,monospace;
+}
+.csv-preview{
+display:none;margin-top:10px;padding:10px 14px;background:var(–surface2);border-radius:8px;
+font-size:11px;font-family:‘Space Mono’,monospace;color:var(–muted);line-height:1.7;
+}
+.csv-preview .hl{color:var(–accent);}
+
+/* Column mapping */
+.col-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+@media(max-width:540px){.col-grid{grid-template-columns:1fr;}}
+.col-row{display:flex;align-items:center;gap:8px;}
+.col-key{font-size:11px;color:var(–muted);min-width:88px;flex-shrink:0;}
+.col-key .req{color:var(–danger);}
+.col-sel{
+flex:1;background:var(–surface2);border:1px solid var(–border);border-radius:7px;
+padding:7px 10px;font-family:‘Space Mono’,monospace;font-size:10px;color:var(–text);
+outline:none;cursor:pointer;transition:border-color .2s;
+}
+.col-sel:focus{border-color:var(–accent);}
+
+/* Fields */
+.field-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.field-pair{grid-template-columns:1fr;}}
+.field-group label{display:block;font-size:10px;font-family:‘Space Mono’,monospace;color:var(–muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.field-input{
+width:100%;background:var(–surface2);border:1px solid var(–border);border-radius:9px;
+padding:11px 14px;font-family:‘Space Mono’,monospace;font-size:13px;color:var(–text);
+outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field-input:focus{border-color:var(–accent);box-shadow:0 0 0 3px rgba(96,165,250,.12);}
+.field-hint{font-size:10px;color:var(–muted);margin-top:5px;line-height:1.5;}
+
+/* Password strength */
+.pw-strength-bar{height:3px;border-radius:2px;margin-top:6px;transition:all .3s;background:var(–border);}
+
+/* Toggle */
+.toggles{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.toggle-row{display:flex;align-items:center;gap:10px;}
+.toggle{width:40px;height:22px;background:var(–surface3);border:1px solid var(–border);border-radius:11px;cursor:pointer;position:relative;transition:all .2s;flex-shrink:0;}
+.toggle.on{background:var(–accent);border-color:var(–accent);box-shadow:0 0 10px rgba(96,165,250,.3);}
+.toggle::after{content:’’;position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.toggle.on::after{transform:translateX(18px);}
+.toggle-label{font-size:12px;color:var(–muted2);line-height:1.4;}
+
+/* Title field */
+.title-input{
+width:100%;background:var(–surface2);border:1px solid var(–border);border-radius:9px;
+padding:11px 14px;font-family:‘DM Sans’,sans-serif;font-size:14px;color:var(–text);
+outline:none;transition:border-color .2s;
+}
+.title-input:focus{border-color:var(–accent);}
+
+/* Info box */
+.info-box{
+background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18);
+border-radius:10px;padding:12px 16px;font-size:12px;color:#93c5fd;line-height:1.7;
+margin-bottom:24px;
+}
+.info-box code{background:rgba(96,165,250,.15);padding:1px 6px;border-radius:4px;font-family:‘Space Mono’,monospace;font-size:10px;}
+
+/* Build button */
+.build-btn{
+width:100%;background:var(–accent);color:#000;border:none;border-radius:11px;
+padding:15px;font-family:‘Space Mono’,monospace;font-size:14px;font-weight:700;letter-spacing:.5px;
+cursor:pointer;margin-top:4px;transition:all .2s;
+box-shadow:0 4px 20px rgba(96,165,250,.3);
+}
+.build-btn:hover:not(:disabled){background:#7cc0ff;transform:translateY(-1px);box-shadow:0 6px 24px rgba(96,165,250,.4);}
+.build-btn:active:not(:disabled){transform:translateY(0);}
+.build-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;}
+.setup-error{
+display:none;margin-top:12px;padding:10px 14px;background:rgba(248,113,113,.08);
+border:1px solid rgba(248,113,113,.25);border-radius:8px;
+font-size:12px;color:var(–danger);
+}
+.divider{border:none;border-top:1px solid var(–border);margin:4px 0;}
+
+/* ═══════════════ DASHBOARD ═══════════════ */
+#dashboard{display:none;}
+
+/* Header */
+.db-header{padding:20px 32px 16px;border-bottom:1px solid var(–border);background:var(–surface);}
+.db-header-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.db-title{font-family:‘Space Mono’,monospace;font-size:clamp(13px,2.2vw,22px);color:var(–text);letter-spacing:-0.5px;}
+.db-sub{font-size:11px;color:var(–muted);margin-top:3px;}
+.reset-btn{
+margin-left:auto;background:transparent;border:1px solid var(–border);border-radius:7px;
+padding:6px 14px;font-family:‘Space Mono’,monospace;font-size:10px;color:var(–muted);
+cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.reset-btn:hover{color:var(–text);border-color:var(–muted);}
+.db-note{
+margin-top:10px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18);
+border-radius:8px;padding:8px 14px;font-size:11px;color:#93c5fd;line-height:1.5;
+}
+.redact-tag{display:inline-block;background:rgba(96,165,250,.15);color:var(–accent);font-family:‘Space Mono’,monospace;font-size:9px;padding:1px 5px;border-radius:3px;letter-spacing:.5px;}
+
+/* Main tabs */
+.main-tabs{display:flex;background:var(–surface);border-bottom:1px solid var(–border);padding:0 32px;overflow-x:auto;gap:0;}
+.main-tab{
+padding:12px 16px;font-size:11px;font-family:‘Space Mono’,monospace;cursor:pointer;
+color:var(–muted);border-bottom:2px solid transparent;white-space:nowrap;
+transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;
+}
+.main-tab:hover{color:var(–text);}
+.main-tab.active{color:var(–text);border-bottom-color:var(–accent);}
+.main-tab.locked{opacity:.6;}
+
+/* Sections */
+.section{display:none;padding:24px 32px;}
+.section.active{display:block;}
+
+/* Layout */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px;}
+@media(max-width:900px){.grid3{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+/* Panels */
+.panel{background:var(–surface);border:1px solid var(–border);border-radius:12px;padding:18px;}
+.panel-title{
+font-family:‘Space Mono’,monospace;font-size:10px;text-transform:uppercase;
+letter-spacing:1.5px;color:var(–muted);margin-bottom:14px;
+display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.spill{font-size:8px;padding:2px 6px;border-radius:10px;}
+
+/* Speed bars */
+.loc-name{font-size:12px;color:var(–text);margin-bottom:3px;display:flex;justify-content:space-between;align-items:baseline;}
+.loc-name span{color:var(–muted);font-size:10px;font-family:‘Space Mono’,monospace;}
+.bar-track{background:var(–surface2);border-radius:3px;height:6px;overflow:hidden;margin-bottom:9px;}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{
+text-align:left;color:var(–muted);font-weight:500;font-size:9px;
+text-transform:uppercase;letter-spacing:1px;padding:0 8px 9px 0;
+border-bottom:1px solid var(–border);
+}
+th:not(:first-child){text-align:right;}
+td{padding:7px 8px 7px 0;border-bottom:1px solid var(–surface2);vertical-align:middle;}
+td:not(:first-child){text-align:right;font-family:‘Space Mono’,monospace;font-size:10px;}
+tr:last-child td{border-bottom:none;}
+.g{color:var(–success);}.w{color:var(–warning);}.d{color:var(–danger);}.m{color:var(–muted);}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-family:‘Space Mono’,monospace;font-weight:700;}
+.badge-wifi{background:rgba(129,140,248,.14);color:var(–wifi);}
+.badge-cell{background:rgba(34,211,238,.1);color:var(–cell);}
+.badge-other{background:rgba(74,222,128,.1);color:var(–success);}
+.badge-ok{background:rgba(74,222,128,.1);color:var(–success);}
+.badge-fail{background:rgba(248,113,113,.1);color:var(–danger);}
+
+/* Reliability bars */
+.rel-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:3px;}
+.rel-ok{background:var(–success);}
+.rel-fail{background:rgba(248,113,113,.3);}
+
+/* Stat strip */
+.stat-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.stat-chip{background:var(–surface);border:1px solid var(–border);border-radius:10px;padding:12px 16px;flex:1;min-width:110px;}
+.stat-chip-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(–muted);margin-bottom:3px;}
+.stat-chip-val{font-family:‘Space Mono’,monospace;font-size:22px;color:var(–text);line-height:1;}
+.stat-chip-sub{font-size:10px;color:var(–muted);margin-top:3px;}
+
+/* Insight cards */
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:8px;}
+.insight{background:var(–surface2);border-radius:9px;padding:14px;border-left:3px solid var(–border);}
+.insight.good{border-left-color:var(–success);}
+.insight.warn{border-left-color:var(–warning);}
+.insight.bad{border-left-color:var(–danger);}
+.insight.info{border-left-color:var(–accent);}
+.insight-t{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(–muted);margin-bottom:5px;}
+.insight-b{font-size:11px;color:var(–text);line-height:1.65;}
+
+/* Method legend */
+.method-legend{display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.method-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-family:‘Space Mono’,monospace;color:var(–text);}
+.method-dot{width:9px;height:9px;border-radius:50%;}
+.method-note{font-size:10px;color:var(–muted);margin-left:2px;}
+
+/* Section headings */
+.sec-h{font-family:‘Space Mono’,monospace;font-size:13px;color:var(–text);margin-bottom:5px;}
+.sec-sub{font-size:12px;color:var(–muted);margin-bottom:18px;line-height:1.65;}
+.compare-wrap{overflow-x:auto;}
+
+/* Legend key */
+.key-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:7px;margin-bottom:18px;}
+.key-item{background:var(–surface2);border:1px solid var(–border);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:9px;}
+.key-code{font-family:‘Space Mono’,monospace;font-size:10px;color:var(–accent);min-width:68px;}
+.key-desc{color:var(–muted);font-size:10px;}
+
+/* Charts */
+.chart-wrap{position:relative;width:100%;margin-bottom:8px;}
+canvas{width:100%!important;display:block;}
+.chart-tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
+.chart-tab{
+padding:5px 13px;border-radius:18px;font-size:10px;cursor:pointer;
+border:1px solid var(–border);background:var(–surface2);color:var(–muted);
+font-family:‘Space Mono’,monospace;transition:all .2s;
+}
+.chart-tab.active{background:var(–accent);color:#000;border-color:var(–accent);font-weight:700;}
+
+/* Map */
+#leafmap{height:460px;border-radius:12px;overflow:hidden;border:1px solid var(–border);}
+.map-legend-box{background:var(–surface);border:1px solid var(–border);border-radius:9px;padding:12px 16px;margin-top:14px;}
+.map-legend-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;font-size:11px;}
+.map-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.map-loading{display:flex;align-items:center;gap:10px;font-size:12px;color:var(–muted);font-family:‘Space Mono’,monospace;padding:20px 0;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(–border);border-top-color:var(–accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Password gate */
+.pw-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;gap:18px;text-align:center;}
+.pw-gate-icon{font-size:44px;opacity:.35;}
+.pw-gate-title{font-family:‘Space Mono’,monospace;font-size:18px;color:var(–text);}
+.pw-gate-sub{font-size:12px;color:var(–muted);max-width:300px;line-height:1.6;}
+.pw-row{display:flex;gap:9px;align-items:center;}
+.pw-inp{
+background:var(–surface2);border:1px solid var(–border);border-radius:9px;
+padding:10px 14px;font-family:‘Space Mono’,monospace;font-size:13px;color:var(–text);
+outline:none;width:220px;transition:all .2s;
+}
+.pw-inp:focus{border-color:var(–accent);box-shadow:0 0 0 3px rgba(96,165,250,.12);}
+.pw-inp.err{border-color:var(–danger);}
+.pw-btn{
+background:var(–accent);color:#000;border:none;border-radius:9px;
+padding:10px 18px;font-family:‘Space Mono’,monospace;font-size:12px;font-weight:700;cursor:pointer;
+transition:all .2s;
+}
+.pw-btn:hover{background:#7cc0ff;}
+.pw-err{font-size:11px;color:var(–danger);font-family:‘Space Mono’,monospace;height:16px;}
+
+/* Animations */
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.shake{animation:shake .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .4s ease forwards;}
+
+footer{text-align:center;color:var(–muted);font-size:10px;padding:20px;font-family:‘Space Mono’,monospace;border-top:1px solid var(–border);margin-top:12px;}
+</style>
+
 </head>
 <body>
-    <header>
-        <h1>Speed Test Dashboard</h1>
-    </header>
-    <div class="container">
-        <div class="results">
-            <div class="result">
-                <h2>Download Speed</h2>
-                <p id="download-speed">Loading...</p>
-            </div>
-            <div class="result">
-                <h2>Upload Speed</h2>
-                <p id="upload-speed">Loading...</p>
-            </div>
-            <div class="result">
-                <h2>Latency</h2>
-                <p id="latency">Loading...</p>
-            </div>
-        </div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SETUP SCREEN
+═══════════════════════════════════════════════════════════ -->
+
+<div id="setup-screen">
+  <div class="setup-header fade-up">
+    <div class="setup-logo"><div class="setup-logo-dot"></div>NETWORK ANALYTICS BUILDER</div>
+    <h1 class="setup-title">Upload CSV.<br>Get Your <span>Dashboard.</span></h1>
+    <p class="setup-subtitle">Upload any Speedtest CSV, set a password, and instantly generate a full analytics dashboard with bias-aware statistics, charts, and a password-protected map.</p>
+  </div>
+
+  <div class="setup-card fade-up" style="animation-delay:.1s">
+    <div class="info-box">
+      Export from <strong>Speedtest by Ookla</strong>: Results tab → Export CSV. Or use any CSV with date, download, upload, ping, and location columns. Column names are auto-detected but can be remapped below.
     </div>
-    <script>
-        function getSpeedTestResults() {
-            // Simulate fetching results from a speed test
-            document.getElementById('download-speed').innerText = '50 Mbps';
-            document.getElementById('upload-speed').innerText = '10 Mbps';
-            document.getElementById('latency').innerText = '20 ms';
-        }
-        window.onload = getSpeedTestResults;
-    </script>
+
+```
+<div class="setup-steps">
+
+  <!-- STEP 1: Upload -->
+  <div class="step-block">
+    <div class="step-num-col">
+      <div class="step-circle active" id="sc1">1</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-body">
+      <div class="step-label">Upload Speedtest CSV</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" accept=".csv,.tsv,.txt" id="csv-file" onchange="handleFile(this.files[0])"/>
+        <span class="drop-icon">📂</span>
+        <div class="drop-title">Drop CSV here or click to browse</div>
+        <div class="drop-hint">Speedtest export, .csv / .tsv · any column order · UTF-8</div>
+      </div>
+      <div class="drop-success" id="csv-success"></div>
+      <div class="csv-preview" id="csv-preview"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Column mapping -->
+  <div class="step-block" id="step2-block" style="opacity:.3;pointer-events:none">
+    <div class="step-num-col">
+      <div class="step-circle" id="sc2">2</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-body">
+      <div class="step-label">Map Columns <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(auto-detected — adjust if needed)</span></div>
+      <div class="col-grid" id="col-map-grid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Password + options -->
+  <div class="step-block" id="step3-block" style="opacity:.3;pointer-events:none">
+    <div class="step-num-col">
+      <div class="step-circle" id="sc3">3</div>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-body">
+      <div class="step-label">Set Password <span style="color:var(--muted);font-size:9px">(protects Map &amp; Legend tabs)</span></div>
+      <div class="field-pair" style="margin-bottom:14px">
+        <div class="field-group">
+          <label>Password</label>
+          <input class="field-input" type="password" id="setup-pw" placeholder="Choose a password" oninput="onPwInput()"/>
+          <div class="pw-strength-bar" id="pw-bar"></div>
+        </div>
+        <div class="field-group">
+          <label>Confirm Password</label>
+          <input class="field-input" type="password" id="setup-pw2" placeholder="Confirm"/>
+        </div>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row">
+          <div class="toggle on" id="tog-anon" onclick="this.classList.toggle('on')"></div>
+          <span class="toggle-label">Anonymize location names with zone codes (e.g. <span style="color:var(--accent);font-family:'Space Mono',monospace;font-size:11px">ZONE-A</span>)</span>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle on" id="tog-home" onclick="this.classList.toggle('on')"></div>
+          <span class="toggle-label">Label the most-tested location as <span style="color:var(--accent);font-family:'Space Mono',monospace;font-size:11px">HOME</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Title -->
+  <div class="step-block" id="step4-block" style="opacity:.3;pointer-events:none">
+    <div class="step-num-col">
+      <div class="step-circle" id="sc4">4</div>
+    </div>
+    <div class="step-body">
+      <div class="step-label">Dashboard Title <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+      <input class="title-input" type="text" id="setup-title" placeholder="e.g. Texas Road Trip · AT&amp;T Speed Tests"/>
+    </div>
+  </div>
+
+</div><!-- /steps -->
+
+<hr class="divider" style="margin-top:24px;margin-bottom:16px">
+<div id="setup-error" class="setup-error"></div>
+<button class="build-btn" id="build-btn" onclick="buildDashboard()" disabled>Build Dashboard →</button>
+<div style="text-align:center;margin-top:10px;font-size:10px;color:var(--muted);font-family:'Space Mono',monospace">All data stays in your browser · nothing is uploaded</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════════════════════════ -->
+
+<div id="dashboard">
+  <div class="db-header">
+    <div class="db-header-top">
+      <div>
+        <div class="db-title" id="dash-title">NETWORK ANALYTICS</div>
+        <div class="db-sub" id="dash-sub"></div>
+      </div>
+      <button class="reset-btn" onclick="resetToSetup()">↩ New Dashboard</button>
+    </div>
+    <div class="db-note" id="dash-note"></div>
+  </div>
+
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="showTab('overview',this)">Overview</button>
+    <button class="main-tab" onclick="showTab('methods',this)">3-Method</button>
+    <button class="main-tab" onclick="showTab('wificell',this)">WiFi vs Cell</button>
+    <button class="main-tab" onclick="showTab('reliability',this)">Reliability</button>
+    <button class="main-tab" onclick="showTab('charts',this)">Charts</button>
+    <button class="main-tab" onclick="showTab('raw',this)">All Tests</button>
+    <button class="main-tab locked" data-sec="mapview" onclick="tryLocked('mapview',this)">Map 🔒</button>
+    <button class="main-tab locked" data-sec="legend" onclick="tryLocked('legend',this)">Legend 🔒</button>
+  </div>
+
+  <!-- OVERVIEW -->
+
+  <div class="section active" id="overview">
+    <div class="sec-h">Summary</div>
+    <div class="sec-sub" id="ov-sub"></div>
+    <div class="stat-strip" id="ov-stats"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-title">Download by Location · Mean (failures = 0 Mbps)</div>
+        <div id="ov-bars"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Key Findings</div>
+        <div class="insights" id="ov-insights" style="grid-template-columns:1fr"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-METHOD -->
+
+  <div class="section" id="methods">
+    <div class="sec-h">3-Method Comparison</div>
+    <div class="sec-sub">Same data, three statistical lenses. Failed tests counted as 0 Mbps in all methods.</div>
+    <div class="method-legend">
+      <div class="method-pill"><div class="method-dot" style="background:#60a5fa"></div>Mean<span class="method-note">— inflated by outliers &amp; burst sessions</span></div>
+      <div class="method-pill"><div class="method-dot" style="background:#34d399"></div>Median<span class="method-note">— robust, best for skewed data</span></div>
+      <div class="method-pill"><div class="method-dot" style="background:#f472b6"></div>Best<span class="method-note">— capability ceiling only</span></div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title">Download Speed · All 3 Methods (Mbps)</div>
+      <div class="compare-wrap">
+        <table style="min-width:480px">
+          <thead><tr><th>Location</th><th>Network</th><th>n (fails)</th><th style="color:#60a5fa">Mean</th><th style="color:#34d399">Median</th><th style="color:#f472b6">Best</th><th>Spread</th></tr></thead>
+          <tbody id="methods-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="grid3" id="method-panels"></div>
+    <div class="panel">
+      <div class="panel-title">Interpreting the three methods</div>
+      <div class="insights">
+        <div class="insight info"><div class="insight-t">Mean says…</div><div class="insight-b">Heavily-tested locations and burst sessions skew averages up. One great day can inflate the mean for weeks of mediocre service.</div></div>
+        <div class="insight good"><div class="insight-t">Median says…</div><div class="insight-b">Resists outliers completely. If you had one 500 Mbps spike and ten 10 Mbps tests, median correctly shows ~10. The honest number.</div></div>
+        <div class="insight warn"><div class="insight-t">Best says…</div><div class="insight-b">Shows what's physically possible at each location under ideal conditions. Useful for ceiling comparisons, useless for typical experience.</div></div>
+        <div class="insight bad"><div class="insight-t">Takeaway</div><div class="insight-b">Mean → useful for trending. Median → honest typical experience. Best → capability only. All three together tell the real story.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIFI VS CELL -->
+
+  <div class="section" id="wificell">
+    <div class="sec-h">WiFi vs Cellular</div>
+    <div class="sec-sub">Different network types serve different purposes. Direct comparison can mislead — context is everything.</div>
+    <div class="grid3">
+      <div class="panel"><div class="panel-title">WiFi Only</div><div id="wifi-bars"></div><div id="wifi-note" style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.6"></div></div>
+      <div class="panel"><div class="panel-title">Cellular Only</div><div id="cell-bars"></div><div id="cell-note" style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.6"></div></div>
+      <div class="panel"><div class="panel-title">Side-by-Side</div>
+        <table id="wc-table">
+          <thead><tr><th>Metric</th><th style="color:var(--wifi)">WiFi</th><th style="color:var(--cell)">Cellular</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div style="margin-top:8px;font-size:9px;color:var(--muted)">*Mean may be inflated by high-outlier locations. See Median for honest comparison.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Why direct comparison can mislead</div>
+      <div class="insights">
+        <div class="insight warn"><div class="insight-t">Different scope</div><div class="insight-b">WiFi is usually tested at one fixed location. Cellular spans many locations including dead zones. It's not a fair head-to-head.</div></div>
+        <div class="insight info"><div class="insight-t">Mean hides the truth</div><div class="insight-b">A few stellar cellular tests make the mean look competitive with WiFi. The median reveals the typical daily experience, often far lower.</div></div>
+        <div class="insight good"><div class="insight-t">Where cellular can win</div><div class="insight-b">Near strong 5G towers, cellular can massively outperform any home broadband. The "best" metric reveals this ceiling.</div></div>
+        <div class="insight bad"><div class="insight-t">Where WiFi wins</div><div class="insight-b">Consistency, symmetric upload, low latency, zero dead zones. For streaming, video calls, and gaming — fixed broadband dominates.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELIABILITY -->
+
+  <div class="section" id="reliability">
+    <div class="sec-h">Reliability · Failed Tests = 0 Mbps</div>
+    <div class="sec-sub">% of tests that returned usable speed results. Both including and excluding failures shown to reveal the impact on averages.</div>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title">Reliability by Location</div>
+      <div class="compare-wrap">
+        <table style="min-width:520px">
+          <thead><tr><th>Location</th><th>Network</th><th>Tests</th><th>Fails</th><th>Reliability</th><th>Mean (w/ 0s)</th><th>Mean (no fails)</th></tr></thead>
+          <tbody id="rel-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Reliability Bars · green = success · red = failure proportion</div>
+      <div id="rel-bars" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+
+  <div class="section" id="charts">
+    <div class="sec-h">Charts</div>
+    <div class="sec-sub">Five interactive views. Switch between them using the tabs below.</div>
+    <div class="chart-tabs">
+      <button class="chart-tab active" onclick="switchChart('scatter',this)">DL Scatter</button>
+      <button class="chart-tab" onclick="switchChart('timeline',this)">Timeline</button>
+      <button class="chart-tab" onclick="switchChart('distribution',this)">Distribution</button>
+      <button class="chart-tab" onclick="switchChart('upload',this)">UL vs DL</button>
+      <button class="chart-tab" onclick="switchChart('latency',this)">Latency</button>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title" id="chart-label">Download Speed · All Tests</div>
+      <div class="chart-wrap"><canvas id="mainChart" height="360"></canvas></div>
+      <div id="chart-note" style="font-size:10px;color:var(--muted);margin-top:7px;line-height:1.6;"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-title">Mean vs Median · Download by Location (Mbps)</div>
+        <div class="chart-wrap"><canvas id="mmChart" height="240"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Reliability % by Location</div>
+        <div class="chart-wrap"><canvas id="relChart" height="240"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL TESTS -->
+
+  <div class="section" id="raw">
+    <div class="sec-h">All Tests · Newest First</div>
+    <div class="sec-sub" id="raw-sub"></div>
+    <div class="panel">
+      <div class="compare-wrap">
+        <table style="min-width:480px">
+          <thead><tr><th>Date</th><th>Network / Server</th><th>Location</th><th>Download</th><th>Upload</th><th>Ping</th><th>Status</th></tr></thead>
+          <tbody id="raw-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP (password locked) -->
+
+  <div class="section" id="mapview">
+    <div id="map-gate" class="pw-gate">
+      <div class="pw-gate-icon">🗺️</div>
+      <div class="pw-gate-title">Map — Password Required</div>
+      <div class="pw-gate-sub">Real geographic locations are shown here. Enter the password you set to unlock.</div>
+      <div class="pw-row">
+        <input class="pw-inp" id="pw-map" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw('mapview')"/>
+        <button class="pw-btn" onclick="checkPw('mapview')">Unlock</button>
+      </div>
+      <div class="pw-err" id="pw-mapview-err"></div>
+    </div>
+    <div id="mapview-content" style="display:none">
+      <div class="sec-h">Speed Test Map</div>
+      <div class="sec-sub">Real location names revealed. Marker size = number of tests. Color = median download speed. Click any marker for details.</div>
+      <div id="map-loading" class="map-loading"><div class="spin"></div> Geocoding locations…</div>
+      <div id="leafmap"></div>
+      <div class="map-legend-box">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px">Speed Color Legend</div>
+        <div class="map-legend-row"><div class="map-dot" style="background:#4ade80"></div>≥ 100 Mbps — Fast</div>
+        <div class="map-legend-row"><div class="map-dot" style="background:#fbbf24"></div>30–99 Mbps — Moderate</div>
+        <div class="map-legend-row"><div class="map-dot" style="background:#f87171"></div>&lt; 30 Mbps or failed — Poor / No service</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGEND (password locked) -->
+
+  <div class="section" id="legend">
+    <div id="legend-gate" class="pw-gate">
+      <div class="pw-gate-icon">🔑</div>
+      <div class="pw-gate-title">Legend — Password Required</div>
+      <div class="pw-gate-sub">This tab maps anonymized zone codes back to real location names from your CSV.</div>
+      <div class="pw-row">
+        <input class="pw-inp" id="pw-legend" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw('legend')"/>
+        <button class="pw-btn" onclick="checkPw('legend')">Unlock</button>
+      </div>
+      <div class="pw-err" id="pw-legend-err"></div>
+    </div>
+    <div id="legend-content" style="display:none">
+      <div class="sec-h">Location Key 🔑</div>
+      <div class="sec-sub">Zone codes generated from your CSV data, sorted by number of tests (most-tested first).</div>
+      <div class="panel"><div class="panel-title">Zone Code → Real Location</div><div class="key-grid" id="key-grid"></div></div>
+    </div>
+  </div>
+
+  <footer id="dash-footer">Speed Test Dashboard Builder · All data stays in your browser</footer>
+</div><!-- /dashboard -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════════════
+const G = {
+  raw: [], all: [], lm: {},
+  locMap: {},       // realLoc -> zone code
+  coordCache: {},   // realLoc -> [lat,lng]
+  pwHash: '',
+  csvHeaders: [],
+  colMap: { date:'', download:'', upload:'', ping:'', server:'', location:'', isp:'', type:'' }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+function djb2(s) { let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h)^s.charCodeAt(i); return (h>>>0).toString(16); }
+function mean(a)   { return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+function median(a) { if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y),m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function cdl(v)    { return v>=100?'g':v>=30?'w':'d'; }
+function fmt(v,d=1){ return (v==null||isNaN(v))?'—':Number(v).toFixed(d); }
+function pct(n,t)  { return t?((n/t)*100).toFixed(0)+'%':'—'; }
+function speedColor(v){ return v>=100?'#4ade80':v>=30?'#fbbf24':'#f87171'; }
+
+// ═══════════════════════════════════════════════════════════════════
+// CSV PARSING
+// ═══════════════════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return null;
+  // Auto-detect delimiter
+  const delims = [',','\t',';','|'];
+  let delim = ',', best = 0;
+  delims.forEach(d => { const c=(lines[0].match(new RegExp('\\'+d,'g'))||[]).length; if(c>best){best=c;delim=d;} });
+
+  function parseLine(line) {
+    const cells=[]; let cur='', q=false;
+    for (let i=0;i<line.length;i++) {
+      const ch=line[i];
+      if (ch==='"') { if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if (ch===delim&&!q) { cells.push(cur.trim()); cur=''; }
+      else cur+=ch;
+    }
+    cells.push(cur.trim());
+    return cells;
+  }
+
+  const headers = parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  const rows = [];
+  for (let i=1;i<lines.length;i++) {
+    if (!lines[i].trim()) continue;
+    const vals = parseLine(lines[i]);
+    const obj = {};
+    headers.forEach((h,idx)=>{ obj[h]=(vals[idx]||'').replace(/^"|"$/g,'').trim(); });
+    rows.push(obj);
+  }
+  return { headers, rows };
+}
+
+function autoDetectCols(headers) {
+  const h = headers.map(x=>x.toLowerCase().replace(/[\s_-]/g,''));
+  function find(...patterns) {
+    for (const p of patterns) {
+      const idx = h.findIndex(x=>x.includes(p));
+      if (idx>=0) return headers[idx];
+    }
+    return '';
+  }
+  return {
+    date:     find('date','timestamp','time','when','tested'),
+    download: find('download','mbpsdown','dlmbps','downloadspeed','downloadmbps','down','dl'),
+    upload:   find('upload','mbpsup','ulmbps','uploadspeed','uploadmbps','up','ul'),
+    ping:     find('ping','latency','jitter','ms','lag'),
+    server:   find('servername','server','isp','network','provider','carrier','operator','connection'),
+    location: find('serverlocation','location','city','place','site','loc','address','region','area','where'),
+    isp:      find('ispname','isp','provider','carrier','operator','networkname'),
+    type:     find('connectiontype','type','interface','protocol','transport'),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FILE HANDLING & DRAG-DROP
+// ═══════════════════════════════════════════════════════════════════
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('dragover'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseCSV(e.target.result);
+    if (!parsed || parsed.rows.length === 0) {
+      showErr('Could not parse CSV. Check that it has a header row and at least one data row.'); return;
+    }
+    G.csvHeaders = parsed.headers;
+    G.raw = parsed.rows;
+    G.colMap = autoDetectCols(parsed.headers);
+
+    // Show success
+    const suc = document.getElementById('csv-success');
+    suc.style.display = 'block';
+    suc.textContent = `✓ Loaded ${parsed.rows.length} rows · ${parsed.headers.length} columns · "${file.name}"`;
+
+    const prev = document.getElementById('csv-preview');
+    prev.style.display = 'block';
+    prev.innerHTML = `<span class="hl">Headers:</span> ${parsed.headers.slice(0,8).join(', ')}${parsed.headers.length>8?` …+${parsed.headers.length-8} more`:''}<br>`+
+      `<span class="hl">Row 1:</span> `+Object.entries(parsed.rows[0]).slice(0,5).map(([k,v])=>`${k}=<em>${v||'—'}</em>`).join(' · ');
+
+    buildColMapUI(parsed.headers);
+    activateSteps();
+    clearErr();
+  };
+  reader.readAsText(file);
+}
+
+function activateSteps() {
+  ['step2-block','step3-block','step4-block'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.opacity='1'; el.style.pointerEvents='auto';
+  });
+  document.getElementById('sc1').className='step-circle done';
+  document.getElementById('sc1').textContent='✓';
+  document.getElementById('sc2').className='step-circle active';
+  document.getElementById('build-btn').disabled=false;
+}
+
+function buildColMapUI(headers) {
+  const fields = [
+    ['date',     'Date *',       true ],
+    ['download', 'Download *',   true ],
+    ['upload',   'Upload',       false],
+    ['ping',     'Ping / ms',    false],
+    ['server',   'Server / ISP', false],
+    ['location', 'Location',     false],
+    ['isp',      'ISP / Carrier',false],
+    ['type',     'Conn. Type',   false],
+  ];
+  const grid = document.getElementById('col-map-grid');
+  grid.innerHTML = '';
+  fields.forEach(([key,label,req])=>{
+    const div = document.createElement('div');
+    div.className = 'col-row';
+    div.innerHTML = `<span class="col-key">${label}${req?'<span class="req">*</span>':''}</span>
+      <select class="col-sel" id="col-${key}" onchange="G.colMap['${key}']=this.value">
+        <option value="">— none —</option>
+        ${headers.map(h=>`<option value="${h}"${G.colMap[key]===h?' selected':''}>${h}</option>`).join('')}
+      </select>`;
+    grid.appendChild(div);
+  });
+}
+
+function onPwInput() {
+  const pw = document.getElementById('setup-pw').value;
+  const bar = document.getElementById('pw-bar');
+  const score = [pw.length>=8, /[A-Z]/.test(pw), /[0-9]/.test(pw), /[^a-zA-Z0-9]/.test(pw), pw.length>=14].filter(Boolean).length;
+  const colors = ['#f87171','#f87171','#fbbf24','#fbbf24','#4ade80'];
+  bar.style.background = pw ? colors[Math.min(score-1,4)] : 'var(--border)';
+  bar.style.width = pw ? (score/5*100)+'%' : '100%';
+}
+
+function showErr(msg) { const e=document.getElementById('setup-error'); e.textContent=msg; e.style.display='block'; }
+function clearErr()   { const e=document.getElementById('setup-error'); e.style.display='none'; }
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA PROCESSING
+// ═══════════════════════════════════════════════════════════════════
+function processData() {
+  const cm = G.colMap;
+
+  function parseSpeed(s) {
+    if (!s) return null;
+    // Strip units, handle Kbps→Mbps
+    const n = parseFloat(s.replace(/[^0-9.]/g,''));
+    if (isNaN(n)) return null;
+    if (n > 10000) return n / 1000; // Kbps
+    return n;
+  }
+
+  function parseDate(s) {
+    if (!s) return { str:'', ts: 0 };
+    try {
+      const d = new Date(s);
+      if (!isNaN(d)) return { str: d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}), ts: d.getTime() };
+    } catch(e) {}
+    return { str: s, ts: 0 };
+  }
+
+  G.all = G.raw.map((row, i) => {
+    const dl   = parseSpeed(cm.download ? row[cm.download] : '');
+    const ul   = parseSpeed(cm.upload   ? row[cm.upload]   : '');
+    const ping = parseFloat(cm.ping     ? row[cm.ping]     : '') || null;
+    const { str: dateStr, ts } = parseDate(cm.date ? row[cm.date] : '');
+    const server = (cm.server   ? row[cm.server]   : '') || (cm.isp ? row[cm.isp] : '') || 'Unknown';
+    const loc    = (cm.location ? row[cm.location] : '') || 'Unknown';
+    const type   = (cm.type     ? row[cm.type]     : '') || '';
+
+    const fail = dl === null || dl === 0;
+
+    // Determine WiFi vs cellular
+    let connType = 'cellular';
+    const lo = (server+type+(cm.isp?row[cm.isp]:'')).toLowerCase();
+    if (/wifi|wi-fi|wlan|ethernet|fiber|fibre|cable|dsl|broadband|frontier|comcast|spectrum|cox|charter|xfinity|att fiber|verizon fios|centurylink|lumen/.test(lo)) connType='wifi';
+    else if (/wifi|wi-fi|wlan/.test(type.toLowerCase())) connType='wifi';
+
+    return { i, d: dateStr, ts, server, loc, type, dl, ul, ping, fail, connType };
+  }).filter(r => r.d);
+
+  buildZoneCodes();
+  buildLocMap();
+}
+
+function buildZoneCodes() {
+  const anon    = document.getElementById('tog-anon').classList.contains('on');
+  const markHome= document.getElementById('tog-home').classList.contains('on');
+
+  if (!anon) {
+    G.all.forEach(t => t.zone = t.loc);
+    G.locMap = {};
+    return;
+  }
+
+  const counts = {};
+  G.all.forEach(t => { counts[t.loc] = (counts[t.loc]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+
+  const locToZone = {};
+  let zIdx = 0;
+  sorted.forEach(([loc], i) => {
+    if (i === 0 && markHome) {
+      locToZone[loc] = 'HOME';
+    } else {
+      // A, B, ... Z, AA, AB, ...
+      let code = '', n = zIdx;
+      do { code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[n%26]+code; n=Math.floor(n/26)-1; } while(n>=0);
+      locToZone[loc] = 'ZONE-'+code;
+      zIdx++;
+    }
+  });
+
+  G.locMap = locToZone;
+  G.all.forEach(t => { t.zone = locToZone[t.loc] || t.loc; });
+}
+
+function buildLocMap() {
+  G.lm = {};
+  G.all.forEach(t => {
+    const key = t.zone + '|' + t.connType;
+    if (!G.lm[key]) G.lm[key] = { zone:t.zone, realLoc:t.loc, connType:t.connType, server:t.server, vals:[], rv:[], count:0, fails:0 };
+    const g = G.lm[key];
+    g.count++;
+    const v = t.fail ? 0 : (t.dl || 0);
+    g.vals.push(v);
+    g.rv.push({ v, fail:t.fail, ul:t.ul, ping:t.ping });
+    if (t.fail) g.fails++;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BUILD DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+function buildDashboard() {
+  const pw  = document.getElementById('setup-pw').value;
+  const pw2 = document.getElementById('setup-pw2').value;
+
+  if (!G.raw.length)               { showErr('Please upload a CSV file first.'); return; }
+  if (!G.colMap.date)              { showErr('Please map the Date column.'); return; }
+  if (!G.colMap.download)          { showErr('Please map the Download Speed column.'); return; }
+  if (!pw)                         { showErr('Please set a password for the Map and Legend tabs.'); return; }
+  if (pw !== pw2)                  { showErr('Passwords do not match.'); return; }
+
+  G.pwHash = djb2(pw);
+  processData();
+
+  if (!G.all.length) { showErr('No valid rows found after parsing. Check your column mapping.'); return; }
+
+  // Set header
+  const title = document.getElementById('setup-title').value.trim();
+  document.getElementById('dash-title').textContent = title || 'NETWORK ANALYTICS';
+
+  const dates  = G.all.filter(t=>t.ts).sort((a,b)=>a.ts-b.ts);
+  const dStart = dates.length ? dates[0].d           : '';
+  const dEnd   = dates.length ? dates[dates.length-1].d : '';
+  const locs   = new Set(G.all.map(t=>t.loc)).size;
+  document.getElementById('dash-sub').textContent = `${G.all.length} tests · ${locs} location${locs!==1?'s':''} · ${dStart} – ${dEnd}`;
+
+  const anon = document.getElementById('tog-anon').classList.contains('on');
+  document.getElementById('dash-note').innerHTML = anon
+    ? `Location names replaced with zone codes like <span class="redact-tag">HOME</span> <span class="redact-tag">ZONE-A</span>. Speed data and statistics are unmodified. <strong>Map</strong> and <strong>Legend</strong> tabs require your password.`
+    : `Locations shown as-is from your CSV. <strong>Map</strong> and <strong>Legend</strong> tabs require your password.`;
+  document.getElementById('raw-sub').textContent = `${G.all.length} tests from your CSV, sorted newest first. ${anon?'Locations anonymized.':''}`;
+  document.getElementById('dash-footer').textContent = `Speed Test Dashboard · ${G.all.length} tests · Generated ${new Date().toLocaleDateString()}`;
+
+  // Reset lock state
+  unlockedSections.clear();
+  mapInst = null; mapInitialized = false;
+  // Reset gates
+  document.getElementById('map-gate').style.display='flex';
+  document.getElementById('mapview-content').style.display='none';
+  document.getElementById('legend-gate').style.display='flex';
+  document.getElementById('legend-content').style.display='none';
+  document.querySelectorAll('.main-tab[data-sec]').forEach(t=>{
+    t.classList.add('locked');
+    t.textContent = t.dataset.sec==='mapview'?'Map 🔒':'Legend 🔒';
+  });
+
+  // Reset chart state
+  chartsReady=false;
+  [mainCh,mmCh,relCh].forEach(c=>{if(c)c.destroy();});
+  mainCh=null; mmCh=null; relCh=null; chartMode='scatter';
+
+  // Switch screen
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  showTab('overview', document.querySelector('.main-tab'));
+
+  // Render all static tabs
+  renderOverview();
+  renderMethods();
+  renderWifiCell();
+  renderReliability();
+  renderRaw();
+  renderLegend();
+  clearErr();
+}
+
+function resetToSetup() {
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('setup-screen').style.display='flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showTab(id, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if (id==='charts') setTimeout(drawAllCharts, 60);
+}
+function tryLocked(id, el) { showTab(id, el); }
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: OVERVIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderOverview() {
+  const all=G.all, lm=G.lm;
+  const dlOK  = all.filter(t=>!t.fail&&t.dl!=null).map(t=>t.dl);
+  const peak  = dlOK.length ? Math.max(...dlOK) : 0;
+  const worst = dlOK.length ? Math.min(...dlOK) : 0;
+  const fails = all.filter(t=>t.fail).length;
+  const locs  = new Set(all.map(t=>t.loc)).size;
+
+  const wifiOK  = all.filter(t=>t.connType==='wifi'&&!t.fail);
+  const cellAll = all.filter(t=>t.connType==='cellular');
+  const wifiAvg = wifiOK.length ? mean(wifiOK.map(t=>t.dl)) : null;
+  const cellMed = cellAll.length ? median(cellAll.map(t=>t.fail?0:(t.dl||0))) : null;
+
+  // Bias note
+  const counts={};
+  all.forEach(t=>{ counts[t.loc]=(counts[t.loc]||0)+1; });
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  let sub = `${all.length} tests across ${locs} location${locs!==1?'s':''}. `;
+  if (top[0] && top[0][1] > all.length*0.25) {
+    const zone = G.locMap[top[0][0]] || top[0][0];
+    sub += `Bias note: ${zone} has ${top[0][1]} tests (${pct(top[0][1],all.length)} of total). Failed tests counted as 0 Mbps in all averages.`;
+  }
+  document.getElementById('ov-sub').textContent = sub;
+
+  // Stat chips
+  document.getElementById('ov-stats').innerHTML = `
+    <div class="stat-chip"><div class="stat-chip-label">Total Tests</div><div class="stat-chip-val">${all.length}</div><div class="stat-chip-sub">${locs} location${locs!==1?'s':''}</div></div>
+    <div class="stat-chip"><div class="stat-chip-label">Peak Download</div><div class="stat-chip-val" style="color:var(--success)">${peak.toFixed(0)}</div><div class="stat-chip-sub">Mbps</div></div>
+    <div class="stat-chip"><div class="stat-chip-label">Worst Download</div><div class="stat-chip-val" style="color:var(--danger)">${worst.toFixed(1)}</div><div class="stat-chip-sub">Mbps (excl. failures)</div></div>
+    <div class="stat-chip"><div class="stat-chip-label">Failed Tests</div><div class="stat-chip-val" style="color:${fails?'var(--danger)':'var(--success)'}">${fails}</div><div class="stat-chip-sub">${pct(fails,all.length)} failure rate</div></div>
+    ${wifiAvg!==null?`<div class="stat-chip"><div class="stat-chip-label">WiFi Avg DL</div><div class="stat-chip-val" style="color:var(--wifi)">${wifiAvg.toFixed(0)}</div><div class="stat-chip-sub">Mbps</div></div>`:''}
+    ${cellMed!==null?`<div class="stat-chip"><div class="stat-chip-label">Cellular Median</div><div class="stat-chip-val" style="color:var(--warning)">${cellMed.toFixed(0)}</div><div class="stat-chip-sub">Mbps</div></div>`:''}
+  `;
+
+  // Overview bars
+  const maxDL = Math.max(...Object.values(lm).map(g=>mean(g.vals)), 1);
+  const ob = document.getElementById('ov-bars');
+  ob.innerHTML = '';
+  Object.values(lm).sort((a,b)=>mean(b.vals)-mean(a.vals)).slice(0,12).forEach(g => {
+    const avg=mean(g.vals), p=Math.max(2, avg/maxDL*100);
+    const clr=g.connType==='wifi'?'var(--wifi)':'var(--cell)';
+    ob.innerHTML += `<div class="loc-name">${g.zone}<span>${avg.toFixed(0)} Mbps · n=${g.count}${g.fails?' · '+g.fails+' fail':''}</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${clr}"></div></div>`;
+  });
+
+  // Insights
+  const oi = document.getElementById('ov-insights');
+  oi.innerHTML = '';
+  if (top[0] && top[0][1]>all.length*0.25) {
+    const z=G.locMap[top[0][0]]||top[0][0];
+    oi.innerHTML += `<div class="insight warn"><div class="insight-t">Sample Bias</div><div class="insight-b">${z} has ${top[0][1]} tests (${pct(top[0][1],all.length)} of total). Its numbers heavily influence all unweighted averages. Use the 3-Method tab for bias-resistant views.</div></div>`;
+  }
+  const dead = Object.values(lm).filter(g=>g.fails===g.count&&g.count>0);
+  if (dead.length) oi.innerHTML += `<div class="insight bad"><div class="insight-t">Dead Zone${dead.length>1?'s':''}</div><div class="insight-b">${dead.map(g=>g.zone).join(', ')} had 0% reliability across ${dead.reduce((s,g)=>s+g.count,0)} test${dead.reduce((s,g)=>s+g.count,0)!==1?'s':''} — a genuine coverage gap.</div></div>`;
+  if (wifiOK.length) oi.innerHTML += `<div class="insight good"><div class="insight-t">WiFi Performance</div><div class="insight-b">Average WiFi download: ${wifiAvg.toFixed(0)} Mbps across ${wifiOK.length} test${wifiOK.length!==1?'s':''} at ${new Set(wifiOK.map(t=>t.loc)).size} location${new Set(wifiOK.map(t=>t.loc)).size!==1?'s':''}.</div></div>`;
+  if (dlOK.length>1) {
+    const spread=peak-worst;
+    oi.innerHTML += `<div class="insight info"><div class="insight-t">Speed Variance</div><div class="insight-b">Download spans ${worst.toFixed(1)}–${peak.toFixed(0)} Mbps (${spread.toFixed(0)} Mbps range). Mean (${mean(dlOK).toFixed(0)}) vs median (${median(dlOK).toFixed(0)}) gap = outlier influence.</div></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: 3-METHOD
+// ═══════════════════════════════════════════════════════════════════
+function renderMethods() {
+  const lm=G.lm;
+  // Table
+  const tbody=document.getElementById('methods-tbody');
+  tbody.innerHTML='';
+  Object.values(lm).sort((a,b)=>median(b.vals)-median(a.vals)).forEach(g=>{
+    const mn=mean(g.vals), med=median(g.vals), best=Math.max(...g.vals), worst=Math.min(...g.vals);
+    const bc=g.connType==='wifi'?'badge-wifi':'badge-cell';
+    tbody.innerHTML+=`<tr><td>${g.zone}</td><td><span class="badge ${bc}">${g.server.slice(0,16)}</span></td><td>${g.count}(${g.fails})</td><td class="${cdl(mn)}">${mn.toFixed(0)}</td><td class="${cdl(med)}">${med.toFixed(0)}</td><td class="${cdl(best)}">${best.toFixed(0)}</td><td class="m">${(best-worst).toFixed(0)}</td></tr>`;
+  });
+  // Three panels
+  const mp=document.getElementById('method-panels');
+  mp.innerHTML='';
+  [{ label:'Mean', c:'#60a5fa', tag:'MEAN', note:'Inflated by outliers & burst sessions', fn:v=>mean(v) },
+   { label:'Median', c:'#34d399', tag:'MEDIAN', note:'Most robust — best for skewed data', fn:v=>median(v) },
+   { label:'Best', c:'#f472b6', tag:'BEST', note:'Capability ceiling only', fn:v=>Math.max(...v) }
+  ].forEach(m=>{
+    const sorted=Object.values(lm).sort((a,b)=>m.fn(b.vals)-m.fn(a.vals));
+    const mx=sorted.length?m.fn(sorted[0].vals)||1:1;
+    const bars=sorted.map(g=>{
+      const v=m.fn(g.vals), p=Math.max(2,v/mx*100);
+      const clr=g.connType==='wifi'?'var(--wifi)':'var(--cell)';
+      return `<div class="loc-name" style="font-size:10px">${g.zone}<span>${v.toFixed(0)} Mbps</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${clr}"></div></div>`;
+    }).join('');
+    mp.innerHTML+=`<div class="panel"><div class="panel-title">${m.label}<span class="spill" style="background:${m.c}22;color:${m.c};margin-left:4px">${m.tag}</span></div><div style="font-size:10px;color:var(--muted);margin-bottom:10px">${m.note}</div>${bars}</div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: WIFI VS CELL
+// ═══════════════════════════════════════════════════════════════════
+function renderWifiCell() {
+  const wT=G.all.filter(t=>t.connType==='wifi');
+  const cT=G.all.filter(t=>t.connType==='cellular');
+  const wOK=wT.filter(t=>!t.fail), cOK=cT.filter(t=>!t.fail);
+  const cV=cT.map(t=>t.fail?0:(t.dl||0));
+
+  const wDL=wOK.length?mean(wOK.map(t=>t.dl)):null;
+  const wUL=wOK.filter(t=>t.ul).length?mean(wOK.filter(t=>t.ul).map(t=>t.ul)):null;
+  const wP=wOK.filter(t=>t.ping).length?mean(wOK.filter(t=>t.ping).map(t=>t.ping)):null;
+  const wRel=wT.length?(wOK.length/wT.length*100):null;
+  const cMean=cT.length?mean(cV):null, cMed=cT.length?median(cV):null;
+  const cUL=cOK.filter(t=>t.ul).length?mean(cOK.filter(t=>t.ul).map(t=>t.ul)):null;
+  const cP=cOK.filter(t=>t.ping).length?mean(cOK.filter(t=>t.ping).map(t=>t.ping)):null;
+  const cRel=cT.length?(cOK.length/cT.length*100):null;
+
+  function bars(el, items, color) {
+    const el2=document.getElementById(el); el2.innerHTML='';
+    if (!items.length) { el2.innerHTML='<div style="color:var(--muted);font-size:11px">No data detected for this type.<br>Check column mapping if unexpected.</div>'; return; }
+    items.forEach(([l,v,mx,u])=>{
+      if (v===null||v===undefined) return;
+      el2.innerHTML+=`<div class="loc-name">${l}<span>${Number(v).toFixed(1)} ${u}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.max(2,v/mx*100))}%;background:${color}"></div></div>`;
+    });
+  }
+
+  const wMax=Math.max(wDL||0,wUL||0,100);
+  bars('wifi-bars',[
+    ['Avg Download',wDL,wMax,'Mbps'],['Avg Upload',wUL,wMax,'Mbps'],
+    ['Avg Latency',wP,100,'ms'],['Reliability',wRel,100,'%']
+  ],'var(--wifi)');
+  document.getElementById('wifi-note').textContent=`${wT.length} WiFi tests · ${new Set(wT.map(t=>t.loc)).size} location${new Set(wT.map(t=>t.loc)).size!==1?'s':''}`;
+
+  const cMax=Math.max(cMean||0,100);
+  bars('cell-bars',[
+    ['Mean DL',cMean,cMax,'Mbps'],['Median DL',cMed,cMax,'Mbps'],
+    ['Mean UL',cUL,Math.max(cUL||0,50),'Mbps'],['Avg Latency',cP,150,'ms'],['Reliability',cRel,100,'%']
+  ],'var(--cell)');
+  document.getElementById('cell-note').textContent=`${cT.length} cellular tests · ${new Set(cT.map(t=>t.loc)).size} location${new Set(cT.map(t=>t.loc)).size!==1?'s':''}`;
+
+  // Side by side
+  const wMedDL=wT.length?median(wT.map(t=>t.fail?0:(t.dl||0))):null;
+  const wBest=wOK.length?Math.max(...wOK.map(t=>t.dl)):null;
+  const cBest=cOK.length?Math.max(...cOK.map(t=>t.dl)):null;
+  const tbody=document.querySelector('#wc-table tbody');
+  tbody.innerHTML='';
+  [['Mean DL',wDL,cMean,'Mbps'],['Median DL',wMedDL,cMed,'Mbps'],['Best DL',wBest,cBest,'Mbps'],
+   ['Mean UL',wUL,cUL,'Mbps'],['Latency',wP,cP,'ms'],['Reliability',wRel,cRel,'%'],
+   ['Tests',wT.length,cT.length,'']
+  ].forEach(([l,a,b,u])=>{
+    const fa=a!==null&&a!==undefined, fb=b!==null&&b!==undefined;
+    tbody.innerHTML+=`<tr><td>${l}</td><td class="${fa?cdl(+a):'m'}">${fa?Number(a).toFixed(u==='%'?0:u===''?0:1)+(u?' '+u:''):'—'}</td><td class="${fb?cdl(+b):'m'}">${fb?Number(b).toFixed(u==='%'?0:u===''?0:1)+(u?' '+u:''):'—'}</td></tr>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: RELIABILITY
+// ═══════════════════════════════════════════════════════════════════
+function renderReliability() {
+  const tbody=document.getElementById('rel-tbody'), rb=document.getElementById('rel-bars');
+  tbody.innerHTML=''; rb.innerHTML='';
+  Object.values(G.lm).sort((a,b)=>((b.count-b.fails)/b.count)-((a.count-a.fails)/a.count)).forEach(g=>{
+    const r=(g.count-g.fails)/g.count*100, rs=r.toFixed(0);
+    const sV=g.rv.filter(x=>!x.fail).map(x=>x.v);
+    const mnI=mean(g.vals).toFixed(0), mnE=sV.length?mean(sV).toFixed(0):'N/A';
+    const bc=g.connType==='wifi'?'badge-wifi':'badge-cell';
+    tbody.innerHTML+=`<tr><td>${g.zone}</td><td><span class="badge ${bc}">${g.server.slice(0,16)}</span></td><td>${g.count}</td><td class="${g.fails?'d':'m'}">${g.fails}</td><td class="${rs==100?'g':rs>=70?'w':'d'}">${rs}%</td><td class="${cdl(+mnI)}">${mnI}</td><td class="${cdl(sV.length?+mnE:0)}">${mnE}</td></tr>`;
+    rb.innerHTML+=`<div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span><strong>${g.zone}</strong> <span style="color:var(--muted);font-size:9px;margin-left:4px">${g.server.slice(0,18)}</span></span><span class="${rs==100?'g':rs>=70?'w':'d'}" style="font-family:'Space Mono',monospace;font-size:11px">${rs}% · ${g.count-g.fails}/${g.count}</span></div><div class="rel-bar"><div class="rel-ok" style="width:${rs}%"></div><div class="rel-fail" style="width:${100-rs}%"></div></div></div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: RAW TABLE
+// ═══════════════════════════════════════════════════════════════════
+function renderRaw() {
+  const tbody=document.getElementById('raw-tbody');
+  tbody.innerHTML='';
+  const sorted=[...G.all].sort((a,b)=>b.ts-a.ts);
+  sorted.forEach(t=>{
+    const status=t.fail?`<span class="badge badge-fail">FAIL</span>`:`<span class="badge badge-ok">OK</span>`;
+    const bc=t.connType==='wifi'?'badge-wifi':'badge-cell';
+    tbody.innerHTML+=`<tr><td style="font-family:'Space Mono',monospace;font-size:10px">${t.d}</td><td><span class="badge ${bc}" style="font-size:8px">${t.server.slice(0,20)}</span></td><td style="font-size:11px"><strong>${t.zone}</strong></td><td class="${t.fail?'d':cdl(t.dl||0)}">${t.fail?'—':fmt(t.dl)}</td><td class="m">${fmt(t.ul)}</td><td class="m">${t.ping!=null?t.ping+'ms':'—'}</td><td>${status}</td></tr>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: LEGEND KEY
+// ═══════════════════════════════════════════════════════════════════
+function renderLegend() {
+  const kg=document.getElementById('key-grid');
+  kg.innerHTML='';
+  if (!document.getElementById('tog-anon').classList.contains('on')) {
+    kg.innerHTML='<div style="color:var(--muted);font-size:12px">Anonymization was disabled — no zone codes were created. All locations shown as-is.</div>';
+    return;
+  }
+  const counts={};
+  G.all.forEach(t=>{ counts[t.loc]=(counts[t.loc]||0)+1; });
+  Object.entries(G.locMap).sort((a,b)=>(counts[b[0]]||0)-(counts[a[0]]||0)).forEach(([real,code])=>{
+    kg.innerHTML+=`<div class="key-item"><span class="key-code">${code}</span><span class="key-desc">= ${real}</span></div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PASSWORD GATE
+// ═══════════════════════════════════════════════════════════════════
+const unlockedSections=new Set();
+function checkPw(section) {
+  const inp=document.getElementById(section==='mapview'?'pw-map':'pw-legend');
+  const err=document.getElementById('pw-'+section+'-err');
+  if (djb2(inp.value)===G.pwHash) {
+    unlockedSections.add(section);
+    document.getElementById(section==='mapview'?'map-gate':'legend-gate').style.display='none';
+    document.getElementById(section+'-content').style.display='block';
+    document.querySelectorAll(`.main-tab[data-sec="${section}"]`).forEach(t=>{
+      t.classList.remove('locked');
+      t.textContent=section==='mapview'?'Map 🗺️':'Legend 🔑';
+    });
+    if (section==='mapview') initMap();
+    err.textContent='';
+  } else {
+    inp.classList.add('err','shake');
+    err.textContent='Incorrect password.';
+    setTimeout(()=>inp.classList.remove('err','shake'),400);
+    inp.value=''; inp.focus();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════════════
+let mainCh=null,mmCh=null,relCh=null,chartsReady=false,chartMode='scatter';
+const CC={wifi:'rgba(129,140,248,',cell:'rgba(34,211,238,',ok:'rgba(74,222,128,',bad:'rgba(248,113,113,'};
+const TCO={
+  responsive:true,
+  plugins:{
+    legend:{labels:{color:'#dde4f0',font:{family:'Space Mono',size:10},boxWidth:11,padding:12}},
+    tooltip:{backgroundColor:'#161b27',titleColor:'#60a5fa',bodyColor:'#dde4f0',borderColor:'#222d45',borderWidth:1,titleFont:{family:'Space Mono'},bodyFont:{family:'DM Sans'}}
+  },
+  scales:{
+    x:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:9}},grid:{color:'#222d45'}},
+    y:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:9}},grid:{color:'#222d45'}}
+  }
+};
+
+function switchChart(type,el){
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  chartMode=type;
+  if(typeof Chart!=='undefined') drawMain();
+}
+
+function drawAllCharts(){
+  if(typeof Chart==='undefined'){setTimeout(drawAllCharts,200);return;}
+  if(chartsReady)return;
+  chartsReady=true;
+  drawMain(); drawMM(); drawRel();
+}
+
+function drawMain(){
+  if(mainCh){mainCh.destroy();mainCh=null;}
+  const ctx=document.getElementById('mainChart').getContext('2d');
+  const NOTES={
+    scatter:'Each dot = one test. Failures plotted at 0 Mbps. Color: blue=cellular, purple=WiFi.',
+    timeline:'Download speed over time. Failures plotted at 0. One line per connection type.',
+    distribution:'Histogram of all download speeds. Reveals the true spread and skew in your data.',
+    upload:'Upload vs Download per test. WiFi is typically symmetric (near diagonal). Cellular is often very asymmetric.',
+    latency:'Average latency (ping) per location. Lower is better. Failures excluded.'
+  };
+  document.getElementById('chart-note').textContent=NOTES[chartMode]||'';
+
+  if(chartMode==='scatter'){
+    document.getElementById('chart-label').textContent='Download Speed · All Tests (failures = 0 Mbps)';
+    const zones=[...new Set(G.all.map(t=>t.zone))];
+    mainCh=new Chart(ctx,{type:'scatter',data:{datasets:zones.map(z=>{
+      const pts=G.all.filter(t=>t.zone===z);
+      const col=pts[0]?.connType==='wifi'?CC.wifi:CC.cell;
+      return{label:z,data:pts.map((t,i)=>({x:i,y:t.fail?0:(t.dl||0)})),backgroundColor:col+'0.75)',pointRadius:4,pointHoverRadius:7};
+    })},options:{...TCO,scales:{x:{display:false},y:{title:{display:true,text:'Mbps',color:'#4f607a'},ticks:{color:'#4f607a'},grid:{color:'#222d45'}}}}});
+
+  }else if(chartMode==='timeline'){
+    document.getElementById('chart-label').textContent='Download Speed Over Time';
+    const sorted=[...G.all].sort((a,b)=>a.ts-b.ts);
+    mainCh=new Chart(ctx,{type:'line',data:{datasets:[
+      {label:'WiFi',data:sorted.filter(t=>t.connType==='wifi').map(t=>({x:t.d,y:t.fail?0:(t.dl||0)})),borderColor:CC.wifi+'1)',backgroundColor:CC.wifi+'0.08)',pointRadius:3,tension:.3},
+      {label:'Cellular',data:sorted.filter(t=>t.connType==='cellular').map(t=>({x:t.d,y:t.fail?0:(t.dl||0)})),borderColor:CC.cell+'1)',backgroundColor:CC.cell+'0.05)',pointRadius:3,tension:.3},
+    ]},options:{...TCO,scales:{x:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:8},maxRotation:45},grid:{color:'#222d45'}},y:{ticks:{color:'#4f607a'},grid:{color:'#222d45'}}}}});
+
+  }else if(chartMode==='distribution'){
+    document.getElementById('chart-label').textContent='Download Speed Distribution';
+    const dlV=G.all.map(t=>t.fail?0:(t.dl||0));
+    const mx=Math.max(...dlV,50);
+    const bs=mx>500?100:mx>200?50:mx>100?25:10;
+    const bins=[];for(let b=0;b<mx+bs;b+=bs)bins.push(b);
+    const counts=bins.slice(0,-1).map((b,i)=>dlV.filter(v=>v>=b&&v<bins[i+1]).length);
+    mainCh=new Chart(ctx,{type:'bar',data:{labels:bins.slice(0,-1).map((b,i)=>`${b}–${bins[i+1]}`),datasets:[{label:'Tests',data:counts,backgroundColor:counts.map((_,i)=>bins[i]===0?CC.bad+'0.7)':bins[i]<30?CC.cell+'0.55)':CC.wifi+'0.7)'),borderRadius:3}]},options:{...TCO,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:8}},grid:{display:false}},y:{ticks:{color:'#4f607a'},grid:{color:'#222d45'}}}}});
+
+  }else if(chartMode==='upload'){
+    document.getElementById('chart-label').textContent='Upload vs Download (Mbps) — Symmetry check';
+    const valid=G.all.filter(t=>!t.fail&&t.dl&&t.ul);
+    mainCh=new Chart(ctx,{type:'scatter',data:{datasets:[
+      {label:'WiFi',data:valid.filter(t=>t.connType==='wifi').map(t=>({x:t.dl,y:t.ul})),backgroundColor:CC.wifi+'0.8)',pointRadius:6},
+      {label:'Cellular',data:valid.filter(t=>t.connType==='cellular').map(t=>({x:t.dl,y:t.ul})),backgroundColor:CC.cell+'0.6)',pointRadius:4},
+    ]},options:{...TCO,scales:{x:{title:{display:true,text:'Download (Mbps)',color:'#4f607a'},ticks:{color:'#4f607a'},grid:{color:'#222d45'}},y:{title:{display:true,text:'Upload (Mbps)',color:'#4f607a'},ticks:{color:'#4f607a'},grid:{color:'#222d45'}}}}});
+
+  }else if(chartMode==='latency'){
+    document.getElementById('chart-label').textContent='Average Latency (ms) by Location — lower is better';
+    const bz={};
+    G.all.filter(t=>!t.fail&&t.ping).forEach(t=>{if(!bz[t.zone])bz[t.zone]=[];bz[t.zone].push(t.ping);});
+    const sorted=Object.entries(bz).sort((a,b)=>mean(a[1])-mean(b[1]));
+    mainCh=new Chart(ctx,{type:'bar',data:{labels:sorted.map(x=>x[0]),datasets:[{label:'Avg ms',data:sorted.map(x=>mean(x[1]).toFixed(1)),backgroundColor:sorted.map(x=>{const v=mean(x[1]);return v<20?CC.wifi+'0.8)':v<60?CC.cell+'0.7)':CC.bad+'0.7)';}),borderRadius:3}]},options:{...TCO,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{title:{display:true,text:'ms',color:'#4f607a'},ticks:{color:'#4f607a'},grid:{color:'#222d45'}},y:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:9}},grid:{display:false}}}}});
+  }
+}
+
+function drawMM(){
+  if(mmCh){mmCh.destroy();}
+  const groups=Object.values(G.lm).sort((a,b)=>median(b.vals)-median(a.vals));
+  mmCh=new Chart(document.getElementById('mmChart').getContext('2d'),{type:'bar',data:{labels:groups.map(g=>g.zone),datasets:[
+    {label:'Mean',data:groups.map(g=>mean(g.vals).toFixed(1)),backgroundColor:'rgba(96,165,250,0.6)',borderRadius:3},
+    {label:'Median',data:groups.map(g=>median(g.vals).toFixed(1)),backgroundColor:'rgba(52,211,153,0.6)',borderRadius:3}
+  ]},options:{...TCO,scales:{x:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:8},maxRotation:45},grid:{display:false}},y:{ticks:{color:'#4f607a'},grid:{color:'#222d45'}}}}});
+}
+
+function drawRel(){
+  if(relCh){relCh.destroy();}
+  const groups=Object.values(G.lm).sort((a,b)=>((b.count-b.fails)/b.count)-((a.count-a.fails)/a.count));
+  relCh=new Chart(document.getElementById('relChart').getContext('2d'),{type:'bar',data:{labels:groups.map(g=>g.zone),datasets:[{label:'Reliability %',data:groups.map(g=>((g.count-g.fails)/g.count*100).toFixed(1)),backgroundColor:groups.map(g=>{const r=(g.count-g.fails)/g.count;return r===1?'rgba(74,222,128,0.7)':r>=.7?'rgba(251,191,36,0.7)':'rgba(248,113,113,0.7)';}),borderRadius:3}]},options:{...TCO,plugins:{legend:{display:false}},indexAxis:'y',scales:{x:{min:0,max:100,ticks:{color:'#4f607a',callback:v=>v+'%'},grid:{color:'#222d45'}},y:{ticks:{color:'#4f607a',font:{family:'Space Mono',size:9}},grid:{display:false}}}}});
+}
+
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  s.onload=()=>{ if(document.getElementById('charts').classList.contains('active')) drawAllCharts(); };
+  document.head.appendChild(s);
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// MAP — geocode via Nominatim, then plot on Leaflet
+// ═══════════════════════════════════════════════════════════════════
+let mapInst=null, mapInitialized=false;
+
+async function initMap() {
+  if (mapInitialized) return;
+  mapInitialized = true;
+
+  document.getElementById('map-loading').style.display='flex';
+  document.getElementById('leafmap').style.display='none';
+
+  mapInst = L.map('leafmap').setView([39.5,-98.5],4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap &copy; CartoDB', maxZoom:19
+  }).addTo(mapInst);
+
+  // Inject popup style
+  if (!document.getElementById('map-popup-style')) {
+    const st=document.createElement('style');
+    st.id='map-popup-style';
+    st.textContent=`.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0f1117;border:1px solid #222d45;color:#dde4f0;box-shadow:0 4px 20px rgba(0,0,0,.65);}.leaflet-popup-close-button{color:#4f607a!important;}.leaflet-popup-content{margin:12px 14px;}`;
+    document.head.appendChild(st);
+  }
+
+  // Build per-location summaries
+  const locSummary={};
+  G.all.forEach(t=>{
+    if (!locSummary[t.loc]) locSummary[t.loc]={vals:[],count:0,fails:0,nets:new Set(),zone:t.zone,realLoc:t.loc};
+    const ls=locSummary[t.loc];
+    ls.count++;
+    ls.nets.add(t.server);
+    ls.vals.push(t.fail?0:(t.dl||0));
+    if (t.fail) ls.fails++;
+  });
+
+  const realLocs=Object.keys(locSummary);
+  const bounds=[];
+
+  for (const loc of realLocs) {
+    const coords=await geocode(loc);
+    if (!coords) continue;
+    bounds.push(coords);
+    const s=locSummary[loc];
+    const med=median(s.vals);
+    const rel=((s.count-s.fails)/s.count*100).toFixed(0);
+    const color=speedColor(med);
+    const sz=Math.max(9,Math.min(32,7+s.count*1.8));
+
+    L.circleMarker(coords,{radius:sz/2,fillColor:color,color:'rgba(255,255,255,0.2)',weight:1,fillOpacity:0.85})
+      .addTo(mapInst)
+      .bindPopup(`
+        <div style="font-family:'Space Mono',monospace;font-size:11px;min-width:175px">
+          <div style="font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:3px">${s.realLoc}</div>
+          <div style="color:#4f607a;font-size:9px;margin-bottom:8px">${s.zone}</div>
+          <div>Tests: <strong>${s.count}</strong> (${s.fails} failed)</div>
+          <div>Reliability: <strong style="color:${rel==100?'#4ade80':+rel>=70?'#fbbf24':'#f87171'}">${rel}%</strong></div>
+          <div>Median DL: <strong style="color:${color}">${med.toFixed(0)} Mbps</strong></div>
+          <div>Best DL: <strong style="color:#4ade80">${Math.max(...s.vals).toFixed(0)} Mbps</strong></div>
+          <div style="margin-top:5px;font-size:9px;color:#4f607a">${[...s.nets].slice(0,3).join(', ')}</div>
+        </div>
+      `);
+  }
+
+  document.getElementById('map-loading').style.display='none';
+  document.getElementById('leafmap').style.display='block';
+  if (mapInst) mapInst.invalidateSize();
+  if (bounds.length>1) mapInst.fitBounds(bounds,{padding:[30,30]});
+  else if (bounds.length===1) mapInst.setView(bounds[0],10);
+}
+
+async function geocode(location) {
+  if (G.coordCache[location]) return G.coordCache[location];
+  // Skip obviously non-location strings
+  if (!location||location==='Unknown'||location.length<3) return null;
+  try {
+    await new Promise(r=>setTimeout(r,350)); // Nominatim rate limit: 1 req/sec
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1&accept-language=en`;
+    const res=await fetch(url);
+    if (!res.ok) return null;
+    const data=await res.json();
+    if (data&&data[0]) {
+      const coords=[parseFloat(data[0].lat),parseFloat(data[0].lon)];
+      G.coordCache[location]=coords;
+      return coords;
+    }
+  } catch(e) { console.warn('Geocode failed:',location,e); }
+  return null;
+}
+</script>
+
 </body>
 </html>
