@@ -1,7 +1,7 @@
 # Speedtestdashboard
 This is a powerful speedtest dashboard 
 How to use 
-0. open 
+0. open https://casondoesstuuffz.github.io/Speedtestdashboard/
 1.Get your speedtest CSV file 
 this can be found in Your speedtest app of choice's export menu
 2.upload CSV (you may have to adjust the CSV if needed) 
